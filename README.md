@@ -5,8 +5,8 @@
 双击运行软件，选择Excel文件，在命令提示符中会提示是否修改表头，若无需修改直接回车；然后会出弹出转换完成的yaml文件保存路径，选择路径保存即可。打开转换后的文件将单引号全部替换删除。
 ### MAC
 下载完文件后进入访达option+cmd+p显示当前路径，右键当前路径，选择在终端中打开，输入命令
-/// chmod 777 MacOS-Excel-To-Yaml
+`chmod 777 MacOS-Excel-To-Yaml`
 再输入下面的命令运行程序
-/// ./MacOS-Excel-To-Yaml
+`./MacOS-Excel-To-Yaml`
 Mac版需要多等待一会，过一会后弹出选择Excel文件窗口，选择Excel文件，在终端中会提示是否修改表头，若无需修改直接回车；然后会出弹出转换完成的yaml文件保存路径，选择路径保存即可。打开转换后的文件将单引号全部替换删除。
-Mac版下次运行只需要在文件的目录输入./MacOS-Excel-To-Yaml
+Mac版下次运行只需要在文件的目录输入`./MacOS-Excel-To-Yaml`
