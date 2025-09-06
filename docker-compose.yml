@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  data-processor:
+    build: .
+    container_name: data-processor
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - FLASK_SECRET_KEY=your-secret-key-here-change-this
+      - FLASK_ENV=production
+    volumes:
+      # 可选：如果需要持久化日志
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+

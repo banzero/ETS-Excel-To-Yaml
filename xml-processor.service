@@ -1,0 +1,19 @@
+[Unit]
+Description=XML Processor Web Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/xml-processor
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=FLASK_SECRET_KEY=your-secret-key-here-change-this
+Environment=FLASK_ENV=production
+ExecStart=/usr/bin/python3 /opt/xml-processor/app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>数据处理工具（网页版）</title>
+    <style>
+        body { font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial; margin: 40px; background: #f8fafc; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-size: 28px; margin: 0 0 8px; color: #1f2937; }
+        .header p { color: #6b7280; font-size: 16px; }
+        .modules { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .card { background: white; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 20px; margin: 0 0 12px; color: #374151; }
+        .card p { color: #6b7280; margin: 0 0 20px; font-size: 14px; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #374151; }
+        input[type=file] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+        input[type=text] { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+        button { background: #6d28d9; color: #fff; padding: 10px 16px; border: 0; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        button:hover { background: #5b21b6; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        .msg { background: #fff7ed; color: #9a3412; padding: 10px 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #fed7aa; }
+        .tip { font-size: 12px; color: #6b7280; margin-top: 6px; }
+        .field-mapping { margin-top: 12px; }
+        .field-item { display: flex; align-items: center; margin-bottom: 8px; }
+        .field-item input { margin: 0 8px; }
+        .field-item label { margin: 0; font-weight: normal; min-width: 120px; }
+        .hidden { display: none; }
+        @media (max-width: 768px) {
+            .modules { grid-template-columns: 1fr; }
+            body { margin: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>数据处理工具（网页版）</h1>
+            <p>支持 Excel 转 YAML 和 XML 批量修改功能</p>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="msg">
+            {% for m in messages %}
+                <div>{{ m }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="modules">
+            <!-- Excel转YAML模块 -->
+            <div class="card">
+                <h2>模块一：Excel 转 YAML</h2>
+                <p>将 Excel 文件转换为 YAML 格式，支持自定义字段映射。</p>
+
+                <form id="yamlForm" method="post" action="/process-yaml" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="yaml-excel">选择 Excel 文件 (.xlsx)</label>
+                        <input id="yaml-excel" name="excel" type="file" accept=".xlsx" required onchange="loadExcelHeaders()" />
+                        <div class="tip">选择文件后会自动加载表头用于字段映射</div>
+                    </div>
+
+                    <div class="field-mapping hidden" id="fieldMapping">
+                        <label>字段映射（可选）</label>
+                        <div id="fieldList"></div>
+                        <div class="tip">左侧为原字段名，右侧为新的字段名（留空则保持原名）</div>
+                    </div>
+
+                    <button type="submit" id="yamlBtn">开始转换</button>
+                </form>
+            </div>
+
+            <!-- XML修改模块 -->
+            <div class="card">
+                <h2>模块二：XML 批量修改</h2>
+                <p>使用 Excel 中的 Address 和 Name 列更新 XML 文件中的 GroupAddress。</p>
+
+                <form method="post" action="/process-xml" enctype="multipart/form-data" onsubmit="onSubmit('xmlBtn')">
+                    <div class="form-group">
+                        <label for="xml-excel">选择 Excel 文件 (.xlsx)</label>
+                        <input id="xml-excel" name="excel" type="file" accept=".xlsx" required />
+                        <div class="tip">需要包含列：Address、Name</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="xml-file">选择 XML 文件 (.xml)</label>
+                        <input id="xml-file" name="xml" type="file" accept=".xml" required />
+                    </div>
+
+                    <button type="submit" id="xmlBtn">开始处理</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function onSubmit(btnId) {
+            document.getElementById(btnId).disabled = true;
+            document.getElementById(btnId).textContent = '处理中...';
+        }
+
+        function loadExcelHeaders() {
+            const fileInput = document.getElementById('yaml-excel');
+            const fieldMapping = document.getElementById('fieldMapping');
+            const fieldList = document.getElementById('fieldList');
+            
+            if (!fileInput.files[0]) {
+                fieldMapping.classList.add('hidden');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('excel', fileInput.files[0]);
+
+            fetch('/get-excel-headers', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('读取Excel失败：' + data.error);
+                    return;
+                }
+
+                fieldList.innerHTML = '';
+                data.headers.forEach(header => {
+                    const fieldItem = document.createElement('div');
+                    fieldItem.className = 'field-item';
+                    fieldItem.innerHTML = `
+                        <label>${header}:</label>
+                        <input type="text" name="field_${header}" placeholder="新字段名（留空保持原名）" />
+                    `;
+                    fieldList.appendChild(fieldItem);
+                });
+
+                fieldMapping.classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('读取Excel失败');
+            });
+        }
+
+        // YAML表单提交时收集字段映射
+        document.getElementById('yamlForm').addEventListener('submit', function(e) {
+            const fieldMapping = {};
+            const fieldInputs = document.querySelectorAll('#fieldList input[type="text"]');
+            
+            fieldInputs.forEach(input => {
+                const originalField = input.name.replace('field_', '');
+                const newField = input.value.trim();
+                if (newField) {
+                    fieldMapping[originalField] = newField;
+                }
+            });
+
+            // 添加隐藏字段存储映射
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'field_mapping';
+            hiddenInput.value = JSON.stringify(fieldMapping);
+            this.appendChild(hiddenInput);
+
+            onSubmit('yamlBtn');
+        });
+    </script>
+</body>
+</html>
+
+
